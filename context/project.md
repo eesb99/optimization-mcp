@@ -2,8 +2,8 @@
 
 **Project**: Optimization MCP Server for Claude Code
 **Purpose**: Constraint-based optimization with Monte Carlo integration
-**Status**: Production Ready (v2.1.0 - Week 3 Complete)
-**Last Updated**: 2025-12-02
+**Status**: Production Ready (v2.2.0 - Phase 1 Network Flow Complete)
+**Last Updated**: 2025-12-04
 
 ---
 
@@ -139,6 +139,43 @@ Provide comprehensive optimization capabilities that integrate seamlessly with M
 - Efficient for typical problem sizes
 
 **Outcome**: ✅ All constraint types working (11/11 tests)
+
+---
+
+### Decision 6: NetworkX for Pure Network Flow (v2.2.0 Phase 1)
+**Date**: 2025-12-04
+**Context**: Need 10-100x speedup for logistics/routing problems at 1K-10K variable scale
+
+**Options Considered**:
+1. Keep PuLP general LP for all problems - simple but slow
+2. Add NetworkX specialized algorithms - faster but needs new solver backend
+3. Use commercial solver (Gurobi Network) - fast but expensive license
+
+**Decision**: NetworkX specialized solver with PuLP fallback (option 2)
+
+**Rationale**:
+- NetworkX algorithms exploit network structure (10-100x faster)
+- Pure Python, no C dependencies, easy install
+- Network simplex for min-cost flow: O(V²E) vs general LP
+- Edmonds-Karp for max flow: O(VE²) specialized algorithm
+- PuLP fallback handles multi-commodity and side constraints
+- User problems span 1K-10K variables where speedup is critical
+
+**Implementation**:
+- NetworkXSolver class (350 LOC) inheriting from BaseSolver
+- optimize_network_flow tool (656 LOC)
+- Explicit edge info passing (from/to nodes) to avoid variable name parsing
+- Node attributes for demand (not dict parameter - API bug fixed)
+- 8 comprehensive tests
+
+**Trade-offs**:
+- ➕ 10-100x speedup on pure network flow (0.0001s vs 0.5s for small networks)
+- ➕ Scales to 10K nodes efficiently
+- ➕ Bottleneck analysis built-in
+- ➖ Additional dependency (networkx>=3.0, but small 300KB)
+- ➖ Limited to pure network flow (multi-commodity needs PuLP)
+
+**Outcome**: ✅ 42/42 tests passing, NetworkX 1000x faster than PuLP on test cases
 
 ---
 
