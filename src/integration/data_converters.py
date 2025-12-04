@@ -478,6 +478,97 @@ def safe_float(value: Any, default: float = 0.0) -> float:
         return default
 
 
+    @staticmethod
+    def validate_network_structure(network: Dict[str, Any]) -> bool:
+        """
+        Validate network flow problem specification.
+
+        Args:
+            network: Dict with 'nodes' and 'edges' keys
+
+        Returns:
+            True if valid
+
+        Raises:
+            ValueError: If specification is invalid
+        """
+        # Check required keys
+        if 'nodes' not in network:
+            raise ValueError("Network missing required key: 'nodes'")
+        if 'edges' not in network:
+            raise ValueError("Network missing required key: 'edges'")
+
+        nodes = network['nodes']
+        edges = network['edges']
+
+        if not isinstance(nodes, list):
+            raise ValueError("Network 'nodes' must be a list")
+        if not isinstance(edges, list):
+            raise ValueError("Network 'edges' must be a list")
+
+        # Validate nodes
+        node_ids = set()
+        total_supply = 0.0
+        total_demand = 0.0
+
+        for i, node in enumerate(nodes):
+            if not isinstance(node, dict):
+                raise ValueError(f"Node {i} must be a dict")
+            if 'id' not in node:
+                raise ValueError(f"Node {i} missing required key: 'id'")
+
+            node_id = node['id']
+            if node_id in node_ids:
+                raise ValueError(f"Duplicate node ID: '{node_id}'")
+            node_ids.add(node_id)
+
+            # Track supply/demand balance
+            supply = node.get('supply', 0.0)
+            demand = node.get('demand', 0.0)
+            total_supply += supply
+            total_demand += demand
+
+        # Check flow conservation (supply should equal demand)
+        net_balance = total_supply - total_demand
+        if abs(net_balance) > 1e-6:
+            raise ValueError(
+                f"Flow conservation violated: "
+                f"total_supply ({total_supply}) != total_demand ({total_demand}), "
+                f"net_balance = {net_balance}"
+            )
+
+        # Validate edges
+        for i, edge in enumerate(edges):
+            if not isinstance(edge, dict):
+                raise ValueError(f"Edge {i} must be a dict")
+
+            required_edge_keys = ['from', 'to']
+            for key in required_edge_keys:
+                if key not in edge:
+                    raise ValueError(f"Edge {i} missing required key: '{key}'")
+
+            from_node = edge['from']
+            to_node = edge['to']
+
+            # Check that nodes exist
+            if from_node not in node_ids:
+                raise ValueError(
+                    f"Edge {i} references unknown 'from' node: '{from_node}'"
+                )
+            if to_node not in node_ids:
+                raise ValueError(
+                    f"Edge {i} references unknown 'to' node: '{to_node}'"
+                )
+
+            # Validate optional numeric fields
+            if 'capacity' in edge and not isinstance(edge['capacity'], (int, float)):
+                raise ValueError(f"Edge {i} 'capacity' must be numeric")
+            if 'cost' in edge and not isinstance(edge['cost'], (int, float)):
+                raise ValueError(f"Edge {i} 'cost' must be numeric")
+
+        return True
+
+
 def dict_to_list(d: Dict[str, float], keys: List[str]) -> List[float]:
     """
     Convert dict to list in specified key order.
