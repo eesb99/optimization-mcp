@@ -28,6 +28,7 @@ from src.api.robust import optimize_robust
 from src.api.portfolio import optimize_portfolio
 from src.api.schedule import optimize_schedule
 from src.api.execute import optimize_execute
+from src.api.network_flow import optimize_network_flow
 
 # Configure logging
 logging.basicConfig(
@@ -387,6 +388,61 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["problem_definition"]
             }
+        ),
+        Tool(
+            name="optimize_network_flow",
+            description=(
+                "Optimize network flow problems: min-cost flow, max-flow, assignment. "
+                "Uses specialized NetworkX algorithms (10-100x faster than general LP). "
+                "Supports Monte Carlo integration for uncertain costs/demands. "
+                "Use cases: supply chain routing, logistics, transportation, assignment problems."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "network": {
+                        "type": "object",
+                        "properties": {
+                            "nodes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {"type": "string"},
+                                        "supply": {"type": "number"},
+                                        "demand": {"type": "number"}
+                                    },
+                                    "required": ["id"]
+                                }
+                            },
+                            "edges": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "from": {"type": "string"},
+                                        "to": {"type": "string"},
+                                        "capacity": {"type": "number"},
+                                        "cost": {"type": "number"},
+                                        "name": {"type": "string"}
+                                    },
+                                    "required": ["from", "to"]
+                                }
+                            }
+                        },
+                        "required": ["nodes", "edges"]
+                    },
+                    "flow_type": {
+                        "type": "string",
+                        "enum": ["min_cost", "max_flow", "assignment"],
+                        "default": "min_cost"
+                    },
+                    "constraints": {"type": "array"},
+                    "monte_carlo_integration": {"type": "object"},
+                    "solver_options": {"type": "object"}
+                },
+                "required": ["network"]
+            }
         )
     ]
 
@@ -417,6 +473,8 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> list[TextContent]:
             result = optimize_schedule(**arguments)
         elif name == "optimize_execute":
             result = optimize_execute(**arguments)
+        elif name == "optimize_network_flow":
+            result = optimize_network_flow(**arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
 
