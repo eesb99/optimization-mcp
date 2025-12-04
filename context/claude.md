@@ -254,3 +254,54 @@ Total:         34/34 ✅
 ---
 
 *Session state saved. Ready for next session or production use.*
+
+---
+
+## Documentation Quick Links (v2.5.0)
+
+**Global Access** (from anywhere in Claude Code):
+- **Complete Guide**: `cat ~/.claude/docs/optimization-mcp-guide.md`
+  - Tool vs Solver architecture explanation
+  - All 9 tools with examples
+  - Performance comparisons
+  - When to use what
+
+- **Quick Reference**: `cat ~/.claude/docs/optimization-mcp-quick-reference.md`
+  - 60-second tool selection guide
+  - Performance table
+  - Code examples
+
+**Project-Specific**:
+- **Full README**: `cat ~/.claude/mcp-servers/optimization-mcp/README.md`
+- **Success Reports**: 
+  - `PHASE-1-SUCCESS.md`
+  - `ALL-PHASES-COMPLETE.md`
+  - `FINAL-SUMMARY.md`
+
+**Memory Access**:
+- Retrieve: `/recall optimization-mcp`
+- Search: `/memory-search optimization`
+- Tags: `/memory-tags mcp optimization`
+
+---
+
+## Quick Test Commands
+
+```bash
+cd ~/.claude/mcp-servers/optimization-mcp
+
+# Run all 51 tests
+pytest tests/ -v
+
+# Run specific tool tests
+python tests/test_network_flow.py   # 8 tests - network flow
+python tests/test_pareto.py         # 6 tests - Pareto frontier
+python tests/test_stochastic.py     # 3 tests - stochastic programming
+
+# Check version
+git describe --tags  # Should show v2.5.0-all-enhancements-complete
+```
+
+---
+
+*Documentation complete. System ready for production use.*
