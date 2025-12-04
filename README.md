@@ -2,8 +2,8 @@
 
 **Comprehensive optimization tools with deep Monte Carlo integration for Claude Code**
 
-Version: 2.2.0 (Phase 1 Complete - Network Flow)
-Status: Production Ready (6 Tools + 1 Orchestration Skill)
+Version: 2.3.0 (Phases 1-2 Complete - Network Flow + Pareto)
+Status: Production Ready (7 Tools + 1 Orchestration Skill)
 
 ---
 
@@ -18,7 +18,7 @@ The Optimization MCP provides constraint-based optimization capabilities that in
 - **High Performance**: NetworkX provides 10-100x speedup for logistics/routing problems (1K-10K variables)
 - **Zero-Friction Workflows**: Optimization outputs feed directly into Monte Carlo validation tools
 - **Open Source**: No commercial licenses required (Gurobi/CPLEX not needed)
-- **Battle-Tested**: 42/42 tests passing, comprehensive error handling, helpful diagnostics
+- **Battle-Tested**: 48/48 tests passing, comprehensive error handling, helpful diagnostics
 
 ---
 
@@ -723,6 +723,93 @@ result = optimize_network_flow(
 
 **Solver**: NetworkX (primary) with PuLP fallback for complex cases
 **Performance**: <0.001s for 100 nodes, <2s for 1000 nodes
+
+---
+
+### 7. `optimize_pareto`
+
+**NEW in v2.3.0**: Pareto multi-objective optimization - explore full trade-off frontier.
+
+**Purpose**: Generate complete Pareto frontier showing all trade-offs between conflicting objectives
+
+**Use Cases**:
+- Strategic planning (profit vs sustainability vs risk)
+- Design optimization (cost vs quality vs time)
+- Product selection (revenue vs customer satisfaction)
+- Multi-criteria decision support
+
+**Key Features**:
+1. **Full Frontier Generation**: 20-100 non-dominated solutions (not just one weighted point)
+2. **Knee Point Recommendation**: Automatically identifies best balanced solution
+3. **Trade-Off Analysis**: Quantifies marginal rates of substitution between objectives
+4. **Mixed Senses**: Handles maximize + minimize objectives simultaneously
+
+**Example: Profit vs Sustainability Trade-Off**:
+```python
+result = optimize_pareto(
+    objectives=[
+        {
+            "name": "profit",
+            "items": [
+                {"name": "project_a", "value": 125000},
+                {"name": "project_b", "value": 87000}
+            ],
+            "sense": "maximize"
+        },
+        {
+            "name": "sustainability",
+            "items": [
+                {"name": "project_a", "value": 65},
+                {"name": "project_b", "value": 92}
+            ],
+            "sense": "maximize"
+        }
+    ],
+    resources={"budget": {"total": 100000}},
+    item_requirements=[
+        {"name": "project_a", "budget": 60000},
+        {"name": "project_b", "budget": 45000}
+    ],
+    num_points=20  # Generate 20 frontier points
+)
+
+# Output:
+# {
+#   "status": "optimal",
+#   "pareto_frontier": [
+#       {
+#           "weights": {"profit": 1.0, "sustainability": 0.0},
+#           "allocation": {"project_a": 1, "project_b": 0},
+#           "objective_values": {"profit": 125000, "sustainability": 65}
+#       },
+#       ... 18 more points ...
+#       {
+#           "weights": {"profit": 0.0, "sustainability": 1.0},
+#           "allocation": {"project_a": 0, "project_b": 1},
+#           "objective_values": {"profit": 87000, "sustainability": 92}
+#       }
+#   ],
+#   "num_frontier_points": 20,
+#   "recommended_point": {...},  # Knee point (best balance)
+#   "tradeoff_analysis": {
+#       "objective_ranges": {...},
+#       "tradeoff_rates": {"sustainability_per_profit": {...}}
+#   }
+# }
+```
+
+**When to Use**:
+- ✅ Don't know the "right" trade-off weights upfront
+- ✅ Need to show executives/stakeholders multiple options
+- ✅ Want to understand sensitivity to objective priorities
+- ✅ Multi-criteria decision problems
+
+**When NOT to use**:
+- ❌ Already know exact weights → Use optimize_allocation with multi-objective
+- ❌ Single objective → Use optimize_allocation
+
+**Solver**: PuLP (solves weighted sums systematically)
+**Performance**: ~0.5-2s for 20 frontier points
 
 ---
 
