@@ -30,6 +30,7 @@ from src.api.schedule import optimize_schedule
 from src.api.execute import optimize_execute
 from src.api.network_flow import optimize_network_flow
 from src.api.pareto import optimize_pareto
+from src.api.stochastic import optimize_stochastic
 
 # Configure logging
 logging.basicConfig(
@@ -488,6 +489,27 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["objectives", "resources", "item_requirements"]
             }
+        ),
+        Tool(
+            name="optimize_stochastic",
+            description=(
+                "Two-stage stochastic programming with recourse decisions. "
+                "Optimizes decisions over time under uncertainty: decide now, adapt later. "
+                "Use cases: inventory management, capacity planning, portfolio rebalancing."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "first_stage": {"type": "object"},
+                    "second_stage": {"type": "object"},
+                    "scenarios": {"type": "array"},
+                    "risk_measure": {"type": "string", "enum": ["expected", "cvar", "worst_case"], "default": "expected"},
+                    "risk_parameter": {"type": "number", "default": 0.95},
+                    "monte_carlo_integration": {"type": "object"},
+                    "solver_options": {"type": "object"}
+                },
+                "required": ["first_stage", "second_stage", "scenarios"]
+            }
         )
     ]
 
@@ -522,6 +544,8 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> list[TextContent]:
             result = optimize_network_flow(**arguments)
         elif name == "optimize_pareto":
             result = optimize_pareto(**arguments)
+        elif name == "optimize_stochastic":
+            result = optimize_stochastic(**arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
 
