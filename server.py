@@ -29,6 +29,7 @@ from src.api.portfolio import optimize_portfolio
 from src.api.schedule import optimize_schedule
 from src.api.execute import optimize_execute
 from src.api.network_flow import optimize_network_flow
+from src.api.pareto import optimize_pareto
 
 # Configure logging
 logging.basicConfig(
@@ -443,6 +444,50 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["network"]
             }
+        ),
+        Tool(
+            name="optimize_pareto",
+            description=(
+                "Generate Pareto frontier for multi-objective optimization. "
+                "Explores trade-offs between conflicting objectives (profit vs sustainability, cost vs quality). "
+                "Returns non-dominated solutions spanning the entire trade-off space. "
+                "Use cases: strategic planning, design optimization, multi-criteria decisions."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "objectives": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {"type": "string"},
+                                            "value": {"type": "number"}
+                                        },
+                                        "required": ["name", "value"]
+                                    }
+                                },
+                                "sense": {"type": "string", "enum": ["maximize", "minimize"]}
+                            },
+                            "required": ["name", "items", "sense"]
+                        },
+                        "minItems": 2
+                    },
+                    "resources": {"type": "object"},
+                    "item_requirements": {"type": "array"},
+                    "constraints": {"type": "array"},
+                    "num_points": {"type": "integer", "minimum": 2, "default": 20},
+                    "monte_carlo_integration": {"type": "object"},
+                    "solver_options": {"type": "object"}
+                },
+                "required": ["objectives", "resources", "item_requirements"]
+            }
         )
     ]
 
@@ -475,6 +520,8 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> list[TextContent]:
             result = optimize_execute(**arguments)
         elif name == "optimize_network_flow":
             result = optimize_network_flow(**arguments)
+        elif name == "optimize_pareto":
+            result = optimize_pareto(**arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
 
