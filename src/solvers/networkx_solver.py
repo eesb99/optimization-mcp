@@ -77,33 +77,32 @@ class NetworkXSolver(BaseSolver):
 
         variables = {}
         for name in names:
-            # Try to extract edge endpoints from variable name
-            # Format: "flow_A_B" or "route_X_Y" etc.
-            parts = name.replace("flow_", "").replace("route_", "").split("_")
-
-            if len(parts) >= 2:
-                # Standard naming convention
-                from_node = parts[0]
-                to_node = "_".join(parts[1:])  # Handle multi-word node names
-            else:
+            # Edge info must be provided in bounds dict
+            if name not in bounds:
                 raise ValueError(
-                    f"Cannot parse edge from variable name '{name}'. "
-                    f"Expected format: 'flow_A_B' or provide edge_info in bounds"
+                    f"NetworkXSolver requires edge information in bounds dict. "
+                    f"Missing edge info for variable: '{name}'"
                 )
 
-            # Get capacity from bounds (upper bound)
-            capacity = float('inf')
-            cost = 0.0
+            bound_info = bounds[name]
 
-            if name in bounds:
-                bound_info = bounds[name]
-                if isinstance(bound_info, tuple) and len(bound_info) == 2:
-                    lower, upper = bound_info
-                    capacity = upper if upper is not None else float('inf')
-                elif isinstance(bound_info, dict):
-                    # Extended format with metadata
-                    capacity = bound_info.get('capacity', float('inf'))
-                    cost = bound_info.get('cost', 0.0)
+            if not isinstance(bound_info, dict):
+                raise ValueError(
+                    f"NetworkXSolver expects dict format in bounds with 'from', 'to', 'capacity', 'cost'. "
+                    f"Got: {type(bound_info)} for variable '{name}'"
+                )
+
+            # Extract edge endpoints
+            if 'from' not in bound_info or 'to' not in bound_info:
+                raise ValueError(
+                    f"Edge info for '{name}' must contain 'from' and 'to' keys. "
+                    f"Got: {list(bound_info.keys())}"
+                )
+
+            from_node = bound_info['from']
+            to_node = bound_info['to']
+            capacity = bound_info.get('capacity', float('inf'))
+            cost = bound_info.get('cost', 0.0)
 
             # Add edge to graph
             self.graph.add_edge(
@@ -142,8 +141,8 @@ class NetworkXSolver(BaseSolver):
             if 'type' in expression:
                 # Explicit problem type specification
                 problem_type = expression['type']
-                if problem_type in ['min_cost', 'min_cost_flow']:
-                    self.problem_type = 'min_cost_flow'
+                if problem_type in ['min_cost', 'min_cost_flow', 'assignment']:
+                    self.problem_type = 'min_cost_flow'  # Assignment is a special case of min_cost
                 elif problem_type in ['max_flow', 'maximum_flow']:
                     self.problem_type = 'max_flow'
                 elif problem_type in ['shortest_path']:
@@ -275,24 +274,37 @@ class NetworkXSolver(BaseSolver):
 
     def _solve_min_cost_flow(self, verbose: bool = False):
         """Solve minimum cost flow problem using network simplex."""
-        # NetworkX expects integer demands and uses 'demand' attribute on nodes
-        # Negative demand = supply
-        demand_dict = {}
+        # NetworkX expects demand as NODE ATTRIBUTE, not a dict parameter
+        # Set 'demand' attribute on each node
+        # NetworkX convention: negative demand = supply, positive demand = consumption
+        # Our node_demands already uses this convention, so NO sign flip needed
+
+        total_demand_check = 0
         for node in self.graph.nodes():
-            demand_dict[node] = -int(self.node_demands.get(node, 0))  # Flip sign for NetworkX
+            # Store net demand directly (already in NetworkX convention)
+            node_demand = int(self.node_demands.get(node, 0))
+            nx.set_node_attributes(self.graph, {node: node_demand}, 'demand')
+            total_demand_check += node_demand
 
         if verbose:
-            print(f"  Demand balance: {sum(demand_dict.values())}")
+            print(f"  Demand balance: {total_demand_check}")
 
         # Check if problem is balanced
-        total_demand = sum(demand_dict.values())
-        if abs(total_demand) > 1e-6:
+        if abs(total_demand_check) > 1e-6:
             raise nx.NetworkXUnfeasible(
-                f"Flow conservation violated: total demand = {total_demand} != 0"
+                f"Flow conservation violated: total demand = {total_demand_check} != 0"
             )
 
         # Solve min-cost flow
-        flow_dict = nx.min_cost_flow(self.graph, demand=demand_dict, weight='weight')
+        # demand='demand' means "use the 'demand' attribute on nodes"
+        # capacity='capacity' means "use the 'capacity' attribute on edges"
+        # weight='weight' means "use the 'weight' attribute for costs"
+        flow_dict = nx.min_cost_flow(
+            self.graph,
+            demand='demand',  # attribute name (string)
+            capacity='capacity',  # attribute name (string)
+            weight='weight'  # attribute name (string)
+        )
 
         # Calculate objective value
         total_cost = sum(

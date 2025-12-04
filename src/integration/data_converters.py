@@ -458,26 +458,6 @@ class DataConverter:
 
         return True
 
-
-# Convenience functions
-
-def safe_float(value: Any, default: float = 0.0) -> float:
-    """
-    Safely convert to float with fallback.
-
-    Args:
-        value: Value to convert
-        default: Default value if conversion fails
-
-    Returns:
-        Float value or default
-    """
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
-
-
     @staticmethod
     def validate_network_structure(network: Dict[str, Any]) -> bool:
         """
@@ -567,6 +547,25 @@ def safe_float(value: Any, default: float = 0.0) -> float:
                 raise ValueError(f"Edge {i} 'cost' must be numeric")
 
         return True
+
+
+# Convenience functions
+
+def safe_float(value: Any, default: float = 0.0) -> float:
+    """
+    Safely convert to float with fallback.
+
+    Args:
+        value: Value to convert
+        default: Default value if conversion fails
+
+    Returns:
+        Float value or default
+    """
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def dict_to_list(d: Dict[str, float], keys: List[str]) -> List[float]:

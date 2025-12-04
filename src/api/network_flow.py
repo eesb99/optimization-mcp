@@ -277,6 +277,8 @@ def _solve_with_networkx(
 
         edge_names.append(name)
         edge_bounds[name] = {
+            'from': from_node,  # Explicit edge endpoints
+            'to': to_node,
             'capacity': capacity if capacity is not None else float('inf'),
             'cost': cost
         }
@@ -323,10 +325,13 @@ def _solve_with_networkx(
 
         result["flow_solution"] = solution
 
-        if flow_type == "min_cost":
+        if flow_type in ["min_cost", "assignment"]:
             result["total_cost"] = objective_value
-        else:
+        elif flow_type == "max_flow":
             result["total_flow"] = objective_value
+        else:
+            # Fallback
+            result["objective_value"] = objective_value
 
         # Add bottleneck analysis
         bottlenecks = solver.get_bottlenecks(tolerance=0.01)
@@ -469,10 +474,13 @@ def _solve_with_pulp_fallback(
 
         result["flow_solution"] = solution
 
-        if flow_type == "min_cost":
+        if flow_type in ["min_cost", "assignment"]:
             result["total_cost"] = objective_value
-        else:
+        elif flow_type == "max_flow":
             result["total_flow"] = objective_value
+        else:
+            # Fallback
+            result["objective_value"] = objective_value
 
         # Calculate bottlenecks
         bottlenecks = []
