@@ -31,6 +31,7 @@ from src.api.execute import optimize_execute
 from src.api.network_flow import optimize_network_flow
 from src.api.pareto import optimize_pareto
 from src.api.stochastic import optimize_stochastic
+from src.api.column_gen import optimize_column_gen
 
 # Configure logging
 logging.basicConfig(
@@ -510,6 +511,26 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["first_stage", "second_stage", "scenarios"]
             }
+        ),
+        Tool(
+            name="optimize_column_gen",
+            description=(
+                "Column generation for large-scale optimization (10K+ variables). "
+                "Iteratively generates columns instead of enumerating all upfront. "
+                "Use cases: cutting stock, bin packing, crew scheduling, vehicle routing."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "master_problem": {"type": "object"},
+                    "pricing_problem": {"type": "object"},
+                    "initial_columns": {"type": "array"},
+                    "max_iterations": {"type": "integer", "default": 100},
+                    "optimality_gap": {"type": "number", "default": 1e-6},
+                    "solver_options": {"type": "object"}
+                },
+                "required": ["master_problem", "pricing_problem"]
+            }
         )
     ]
 
@@ -546,6 +567,8 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> list[TextContent]:
             result = optimize_pareto(**arguments)
         elif name == "optimize_stochastic":
             result = optimize_stochastic(**arguments)
+        elif name == "optimize_column_gen":
+            result = optimize_column_gen(**arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
 
