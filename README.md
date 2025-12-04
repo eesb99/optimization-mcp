@@ -2,8 +2,8 @@
 
 **Comprehensive optimization tools with deep Monte Carlo integration for Claude Code**
 
-Version: 2.3.0 (Phases 1-2 Complete - Network Flow + Pareto)
-Status: Production Ready (7 Tools + 1 Orchestration Skill)
+Version: 2.5.0 (All 4 Enhancements Complete)
+Status: Production Ready (9 Tools + 1 Orchestration Skill)
 
 ---
 
@@ -18,7 +18,8 @@ The Optimization MCP provides constraint-based optimization capabilities that in
 - **High Performance**: NetworkX provides 10-100x speedup for logistics/routing problems (1K-10K variables)
 - **Zero-Friction Workflows**: Optimization outputs feed directly into Monte Carlo validation tools
 - **Open Source**: No commercial licenses required (Gurobi/CPLEX not needed)
-- **Battle-Tested**: 48/48 tests passing, comprehensive error handling, helpful diagnostics
+- **Battle-Tested**: 51/51 tests passing, comprehensive error handling, helpful diagnostics
+- **Comprehensive Coverage**: Network flow, Pareto frontiers, stochastic programming, column generation
 
 ---
 
