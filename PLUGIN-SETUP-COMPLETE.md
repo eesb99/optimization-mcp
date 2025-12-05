@@ -151,13 +151,13 @@ claude plugin validate .claude-plugin/marketplace.json
 - ✓ 51/51 tests passing
 - ✓ DEVELOPMENT-JOURNAL.md (debugging history)
 - ✓ Git configured (eesb99 credentials)
-- ⏸ Repository visibility: PRIVATE (change to PUBLIC when ready)
+- ✓ Repository visibility: PUBLIC (changed 2025-12-05 14:54 UTC)
 
 ---
 
 **Repository**: https://github.com/eesb99/optimization-mcp
-**Marketplace Ready**: YES
-**Public Distribution**: Blocked by PRIVATE repo (make public to enable)
+**Visibility**: PUBLIC ✓ (Changed 2025-12-05)
+**Marketplace Ready**: YES - Ready for installation via `/plugin`
 
 ---
 

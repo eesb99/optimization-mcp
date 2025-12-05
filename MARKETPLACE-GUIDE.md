@@ -1,6 +1,6 @@
 # Optimization MCP - Marketplace Distribution Guide
 
-**Repository**: https://github.com/eesb99/optimization-mcp (PRIVATE)
+**Repository**: https://github.com/eesb99/optimization-mcp (PUBLIC ✓)
 **Version**: 2.5.0
 **Author**: THIAN SEONG YEE <eesb99@gmail.com>
 **Date**: 2025-12-05
@@ -193,7 +193,7 @@ Configured MCP Servers:
 
 ## Current State
 
-**Repository**: PRIVATE on GitHub
+**Repository**: PUBLIC on GitHub ✓
 **Marketplace**: ✓ Created and validated
 **Setup Scripts**: ✓ Created (setup.sh, run.sh)
 **Ready to Publish**: YES - just need to make repo public

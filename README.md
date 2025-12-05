@@ -1,6 +1,10 @@
 # Optimization MCP
 
-**Comprehensive optimization tools with deep Monte Carlo integration for Claude Code**
+**Advanced optimization tools for Claude Code - 9 specialized solvers for production use**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-51%2F51%20passing-brightgreen)](tests/)
+[![Version](https://img.shields.io/badge/version-2.5.0-blue)]()
 
 Version: 2.5.0 (All 4 Enhancements Complete)
 Status: Production Ready (9 Tools + 1 Orchestration Skill)
@@ -25,17 +29,43 @@ The Optimization MCP provides constraint-based optimization capabilities that in
 
 ## Installation
 
-Already installed at: `~/.claude/mcp-servers/optimization-mcp/`
+### Via Plugin Marketplace (Recommended)
 
-### Configuration
+```bash
+# Add marketplace
+claude plugin marketplace add eesb99/optimization-mcp
 
-The MCP is configured in:
-- **Profile**: Added to `business` profile in `~/.claude/config/mcp-profiles.json`
-- **Category**: Listed under `business` MCPs
+# Install plugin
+claude plugin install optimization-mcp
 
-### Restart Required
+# Verify installation
+/mcp
+# Should show: ✔ optimization-mcp (connected, 9 tools)
+```
 
-After installation, **restart Claude Code** to load the new MCP.
+### Manual Installation
+
+```bash
+# Clone repository
+git clone https://github.com/eesb99/optimization-mcp.git ~/.claude/mcp-servers/optimization-mcp
+
+# Run setup
+cd ~/.claude/mcp-servers/optimization-mcp
+./setup.sh
+
+# Add to ~/.claude.json
+{
+  "mcpServers": {
+    "optimization-mcp": {
+      "command": "/Users/[username]/.claude/mcp-servers/optimization-mcp/run.sh"
+    }
+  }
+}
+
+# Restart Claude Code
+```
+
+**Auto-Setup**: The `setup.sh` script automatically creates a virtual environment and installs all dependencies.
 
 ---
 
