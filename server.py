@@ -384,7 +384,7 @@ async def list_tools() -> list[Tool]:
                         },
                         "required": ["variables", "objective"]
                     },
-                    "auto_detect": {"type": "boolean", "default": true},
+                    "auto_detect": {"type": "boolean", "default": True},
                     "solver_preference": {"type": "string", "enum": ["pulp", "scipy", "cvxpy"]},
                     "monte_carlo_integration": {"type": "object"},
                     "solver_options": {"type": "object"}
