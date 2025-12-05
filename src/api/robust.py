@@ -77,10 +77,11 @@ def optimize_robust(
         )
     """
     # Validate inputs
+    # Note: require_values=False because robust optimization gets values from scenarios, not objective
     DataConverter.validate_objective_spec({
         "items": objective.get("items", []),
         "sense": objective.get("sense", "maximize")
-    })
+    }, require_values=False)
     DataConverter.validate_resources_spec(resources)
 
     # Extract scenarios
@@ -349,8 +350,10 @@ def _evaluate_allocation_across_scenarios(
 
     for scenario in scenarios:
         # Calculate outcome for this allocation in this scenario
+        # Extract values from scenario (supports both {name: value} and {"values": {name: value}} formats)
+        scenario_values = scenario.get("values", scenario)
         outcome = sum(
-            allocation.get(name, 0) * scenario.get(f"{name}_value", scenario.get(name, 0))
+            allocation.get(name, 0) * scenario_values.get(name, 0)
             for name in item_names
         )
         outcomes.append(outcome)

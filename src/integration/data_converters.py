@@ -19,12 +19,14 @@ class DataConverter:
     """
 
     @staticmethod
-    def validate_objective_spec(objective: Dict[str, Any]) -> bool:
+    def validate_objective_spec(objective: Dict[str, Any], require_values: bool = True) -> bool:
         """
         Validate objective function specification.
 
         Args:
             objective: Dict with 'items', 'sense' keys
+            require_values: If True, require 'value' for each item (default: True)
+                          If False, only require 'name' (for robust optimization where values come from scenarios)
 
         Returns:
             True if valid
@@ -50,8 +52,12 @@ class DataConverter:
         for i, item in enumerate(objective["items"]):
             if not isinstance(item, dict):
                 raise ValueError(f"Item {i} must be a dict")
-            if "name" not in item or "value" not in item:
-                raise ValueError(f"Item {i} must have 'name' and 'value'")
+
+            if "name" not in item:
+                raise ValueError(f"Item {i} must have 'name'")
+
+            if require_values and "value" not in item:
+                raise ValueError(f"Item {i} must have 'value'")
 
         return True
 
