@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# Testing
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+.hypothesis/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Development/Session Context Files
+context/
+context-backup*/
+CONTEXT-SAVED.md
+
+# Test Reports and Documentation (keep main README.md)
+ALL-PHASES-COMPLETE.md
+FINAL-SUMMARY.md
+PHASE-*-SUCCESS.md
+HOW-TO-USE-SKILL.md
+OPTIMIZATION_IMPROVEMENTS.md
+RELIABILITY-ASSESSMENT.md
+SOPHISTICATION-AND-BUSINESS-VALUE.md
+V2.*.md
+test_examples.md
+test-results-*.txt
+demo_features.py
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+.cache/
