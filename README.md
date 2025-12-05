@@ -77,6 +77,33 @@ cd ~/.claude/mcp-servers/optimization-mcp
 
 ---
 
+## Important Disclaimers
+
+### Software Warranty
+This software is provided "as is" under the MIT License, without warranty of any kind, express or implied. The authors are not liable for any damages arising from the use of this software. Always validate optimization results before implementation.
+
+### Business Decision Notice
+Optimization results are mathematical models based on input data and assumptions. While algorithms are rigorously tested, real-world decisions require:
+- Validation of results with domain experts
+- Sensitivity analysis for critical parameters
+- Testing with historical data before deployment
+- Understanding of model limitations and assumptions
+
+### Financial Advice Disclaimer
+The portfolio optimization tool is for educational and analytical purposes only. It does not constitute financial, investment, or professional advice. Consult qualified financial advisors before making investment decisions. Past performance and model outputs do not guarantee future results.
+
+### Accuracy and Validation
+All optimization tools undergo comprehensive testing (51/51 tests passing), but users should:
+- Verify results independently for critical applications
+- Test with known problems before production use
+- Validate assumptions and input data quality
+- Review solver status and warnings carefully
+- Consider multiple scenarios and sensitivity analysis
+
+**Recommendation**: Start with non-critical applications, validate thoroughly, then scale to production use.
+
+---
+
 ## Tools
 
 ### 1. `optimize_allocation`
