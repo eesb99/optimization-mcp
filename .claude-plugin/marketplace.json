@@ -1,0 +1,45 @@
+{
+  "name": "optimization-mcp-marketplace",
+  "owner": {
+    "name": "THIAN SEONG YEE",
+    "email": "eesb99@gmail.com"
+  },
+  "metadata": {
+    "description": "Advanced optimization tools for Claude Code - 9 specialized solvers for allocation, scheduling, portfolio, network flow, Pareto analysis, stochastic programming, and column generation",
+    "version": "2.5.0",
+    "homepage": "https://github.com/eesb99/optimization-mcp"
+  },
+  "plugins": [
+    {
+      "name": "optimization-mcp",
+      "description": "Production-ready optimization MCP with 9 specialized tools: resource allocation, robust optimization, portfolio optimization, project scheduling, network flow (10-100x faster), Pareto frontier analysis, 2-stage stochastic programming, and column generation for large-scale problems. Built with PuLP, CVXPY, SciPy, and NetworkX.",
+      "version": "2.5.0",
+      "author": {
+        "name": "THIAN SEONG YEE",
+        "email": "eesb99@gmail.com"
+      },
+      "homepage": "https://github.com/eesb99/optimization-mcp",
+      "repository": "git+https://github.com/eesb99/optimization-mcp.git",
+      "license": "MIT",
+      "keywords": [
+        "optimization",
+        "linear-programming",
+        "operations-research",
+        "resource-allocation",
+        "scheduling",
+        "portfolio",
+        "network-flow",
+        "pareto",
+        "stochastic",
+        "column-generation"
+      ],
+      "category": "productivity",
+      "source": "./",
+      "mcpServers": {
+        "optimization-mcp": {
+          "command": "${CLAUDE_PLUGIN_ROOT}/run.sh"
+        }
+      }
+    }
+  ]
+}
