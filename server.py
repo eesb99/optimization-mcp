@@ -19,7 +19,7 @@ import asyncio
 sys.path.insert(0, str(__file__).replace('/server.py', '/src'))
 
 from mcp.server import Server
-from mcp.types import Tool, TextContent, ServerCapabilities, ToolsCapability
+from mcp.types import Tool, TextContent
 from mcp.server.stdio import stdio_server
 
 # Import tool implementations
@@ -601,16 +601,11 @@ async def main():
     logger.info("Starting Optimization MCP Server")
 
     async with stdio_server() as (read_stream, write_stream):
-        # Declare server capabilities
-        init_options = app.create_initialization_options()
-        init_options.capabilities = ServerCapabilities(
-            tools=ToolsCapability(listChanged=True)
-        )
-
+        # Let decorators auto-detect capabilities
         await app.run(
             read_stream,
             write_stream,
-            init_options
+            app.create_initialization_options()
         )
 
 
