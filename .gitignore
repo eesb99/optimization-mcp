@@ -54,6 +54,10 @@ context-backup*/
 CONTEXT-SAVED.md
 DEVELOPMENT-JOURNAL.md
 
+# Test Files and Folders
+test_*.py
+tests/
+
 # Test Reports and Documentation (keep main README.md)
 ALL-PHASES-COMPLETE.md
 FINAL-SUMMARY.md
