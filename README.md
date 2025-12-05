@@ -25,6 +25,14 @@ The Optimization MCP provides constraint-based optimization capabilities that in
 - **Battle-Tested**: 51/51 tests passing, comprehensive error handling, helpful diagnostics
 - **Comprehensive Coverage**: Network flow, Pareto frontiers, stochastic programming, column generation
 
+### Pareto Frontier Visualization
+
+Multi-objective optimization balancing conflicting goals (profit vs sustainability):
+
+![Pareto Frontier](docs/images/pareto_frontier_sketchnote.png)
+
+*This visualization demonstrates how the Pareto frontier tool explores trade-offs between competing objectives, helping you make strategic decisions across multiple optimal solutions.*
+
 ---
 
 ## Installation
