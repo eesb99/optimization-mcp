@@ -14,9 +14,10 @@ import json
 import logging
 from typing import Any, Dict
 import asyncio
+from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(__file__).replace('/server.py', '/src'))
+# Add src to path (cross-platform compatible)
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 from mcp.server import Server
 from mcp.types import Tool, TextContent
