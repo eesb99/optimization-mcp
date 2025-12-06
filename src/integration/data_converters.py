@@ -255,6 +255,55 @@ class DataConverter:
         return True
 
     @staticmethod
+    def validate_item_universe_consistency(
+        objective: Dict[str, Any],
+        item_requirements: List[Dict[str, Any]]
+    ) -> bool:
+        """
+        Validate that all items referenced in objective exist in item_requirements.
+
+        Prevents silent bugs where objective references items not in requirements
+        (e.g., typos in item names).
+
+        Args:
+            objective: Objective dict (single or multi-objective format)
+            item_requirements: List of item requirement dicts
+
+        Returns:
+            True if valid
+
+        Raises:
+            ValueError: If items in objective are not found in requirements
+        """
+        # Extract item names from requirements
+        requirement_names = {item["name"] for item in item_requirements}
+
+        # Extract item names from objective (handle both formats)
+        objective_names = set()
+
+        if "items" in objective:
+            # Single objective: {"sense": "maximize", "items": [...]}
+            objective_names = {item["name"] for item in objective["items"]}
+        elif "functions" in objective:
+            # Multi-objective: {"sense": "maximize", "functions": [{...}]}
+            for func in objective["functions"]:
+                objective_names.update(item["name"] for item in func["items"])
+
+        # Check for items in objective that don't exist in requirements
+        missing = objective_names - requirement_names
+        if missing:
+            raise ValueError(
+                f"Items in objective not found in item_requirements: {sorted(missing)}. "
+                f"Available items: {sorted(requirement_names)}. "
+                f"This usually indicates a typo in item names."
+            )
+
+        # Note: Items in requirements but not in objective is OK
+        # They just won't be selected by the optimizer
+
+        return True
+
+    @staticmethod
     def normalize_variable_names(names: List[str]) -> List[str]:
         """
         Normalize variable names for solver compatibility.

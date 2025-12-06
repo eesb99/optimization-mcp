@@ -78,6 +78,7 @@ def optimize_allocation(
     DataConverter.validate_multi_objective_spec(objective)
     DataConverter.validate_resources_spec(resources)
     DataConverter.validate_item_requirements(item_requirements, resources)
+    DataConverter.validate_item_universe_consistency(objective, item_requirements)
 
     # Extract solver options
     solver_opts = solver_options or {}
