@@ -12,6 +12,7 @@ Tools:
 import sys
 import json
 import logging
+import os
 from typing import Any, Dict
 import asyncio
 from pathlib import Path
@@ -34,13 +35,24 @@ from src.api.pareto import optimize_pareto
 from src.api.stochastic import optimize_stochastic
 from src.api.column_gen import optimize_column_gen
 
+# Configure logging with environment variable support
+log_path = os.getenv('OPT_MCP_LOG_PATH', '/tmp/optimization-mcp.log')
+
+# Ensure log directory exists (cross-platform)
+Path(log_path).parent.mkdir(parents=True, exist_ok=True)
+
+# Create handlers
+file_handler = logging.FileHandler(log_path)
+stream_handler = logging.StreamHandler()  # stdout for debugging
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.FileHandler('/tmp/optimization-mcp.log')]
+    handlers=[file_handler, stream_handler]
 )
 logger = logging.getLogger('optimization-mcp')
+logger.info(f"Optimization MCP server starting (log file: {log_path})")
 
 
 # Create MCP server instance
