@@ -10,6 +10,76 @@ Status: Production Ready (9 Tools + 1 Orchestration Skill)
 
 ---
 
+## Quick Start (60 Seconds)
+
+Want to try it immediately? Here's the fastest path:
+
+### 1. Install Dependencies (10 seconds)
+```bash
+git clone https://github.com/your-org/optimization-mcp
+cd optimization-mcp
+pip install -r requirements.txt
+```
+
+### 2. Test It Works (10 seconds)
+```python
+# test_basic.py
+from src.api.allocation import optimize_allocation
+
+result = optimize_allocation(
+    objective={
+        "sense": "maximize",
+        "items": [
+            {"name": "project_a", "value": 100},
+            {"name": "project_b", "value": 150}
+        ]
+    },
+    resources={"budget": {"total": 10000}},
+    item_requirements=[
+        {"name": "project_a", "budget": 6000},
+        {"name": "project_b", "budget": 5000}
+    ]
+)
+
+print(f"Status: {result['status']}")
+print(f"Optimal value: {result['objective_value']}")
+print(f"Allocation: {result['allocation']}")
+```
+
+Run: `python test_basic.py`
+
+**Expected output**:
+```
+Status: optimal
+Optimal value: 250.0
+Allocation: {'project_a': 1, 'project_b': 1}
+```
+
+### 3. Use in Claude Code (30 seconds)
+Add to `~/.claude.json`:
+```json
+{
+  "mcpServers": {
+    "optimization-mcp": {
+      "command": "python",
+      "args": ["/path/to/optimization-mcp/server.py"]
+    }
+  }
+}
+```
+
+Restart Claude Code, then try:
+```
+Claude, use optimization-mcp to allocate a $100K budget across 3 marketing channels
+```
+
+### 4. Next Steps (10 seconds)
+- Read [full documentation](#installation) below
+- Try [example workflows](#canonical-workflows)
+- Explore [all 9 tools](#tools)
+
+---
+
 ## Overview
 
 The Optimization MCP provides constraint-based optimization capabilities that integrate seamlessly with your existing Monte Carlo MCP. Find optimal resource allocations, robust solutions across scenarios, and make data-driven decisions under uncertainty.
@@ -682,6 +752,66 @@ result = optimize_execute(
 
 **Solver**: Auto-selected (PuLP/SciPy/CVXPY) or manual override
 
+#### Why optimize_execute is Your "Escape Hatch"
+
+**The Flexibility Layer**: While specialized tools cover 90% of use cases, `optimize_execute` is deliberately designed for the other 10%.
+
+**When specialized tools fit** (use these first):
+- Budget allocation → `optimize_allocation`
+- Portfolio → `optimize_portfolio`
+- Scheduling → `optimize_schedule`
+- Network routing → `optimize_network_flow`
+- Multi-objective trade-offs → `optimize_pareto`
+
+**When you need custom formulation** (use optimize_execute):
+- Custom knapsack variants
+- Unusual constraint types
+- Rapid prototyping of new problems
+- Educational/research applications
+- Any problem not fitting standard templates
+
+**Think of it as**:
+- **Specialized tools** = High-level API (easy, opinionated, 90% of cases)
+- **optimize_execute** = Low-level API (flexible, general, 10% of cases)
+
+**Example - Custom Multi-Dimensional Knapsack**:
+```python
+# Specialized tools don't support this exact variant
+# Use optimize_execute for full flexibility
+result = optimize_execute(
+    problem_definition={
+        "variables": [
+            {"name": f"item_{i}", "type": "binary"}
+            for i in range(100)
+        ],
+        "objective": {
+            "coefficients": {f"item_{i}": values[i] for i in range(100)},
+            "sense": "maximize"
+        },
+        "constraints": [
+            # Weight constraint
+            {"coefficients": {f"item_{i}": weights[i] for i in range(100)},
+             "type": "<=", "rhs": capacity},
+            # Volume constraint
+            {"coefficients": {f"item_{i}": volumes[i] for i in range(100)},
+             "type": "<=", "rhs": max_volume},
+            # Custom: At most 10 items from category A
+            {"coefficients": {f"item_{i}": 1 for i in category_a_items},
+             "type": "<=", "rhs": 10}
+        ]
+    },
+    auto_detect=True
+)
+```
+
+**You get**:
+- Auto-detection of solver (PuLP for this binary problem)
+- All the power of mathematical programming
+- None of the boilerplate of specialized tools
+- Monte Carlo integration still available
+
+**Both have their place** - use specialized tools when they fit (easier, better validation), `optimize_execute` when you need full control.
+
 ---
 
 ### 6. `optimize_network_flow`
@@ -1043,6 +1173,470 @@ If your problem exceeds recommended limits:
 4. **Heuristics**: Use optimize_robust with candidate sampling
 5. **Column generation**: Use optimize_column_gen for very large problems
 6. **Commercial solvers**: Consider Gurobi/CPLEX for 10x+ speedup (not included)
+
+---
+
+## Monte Carlo Integration Patterns
+
+This MCP has deep Monte Carlo integration - every tool can work with uncertainty. However, tools use different patterns based on their needs.
+
+### Pattern Summary
+
+| Tool | MC Parameter | Modes Supported | Purpose |
+|------|--------------|-----------------|---------|
+| optimize_allocation | monte_carlo_integration | percentile, expected | Use MC values in objective |
+| optimize_robust | monte_carlo_scenarios | scenarios only | Evaluate across all scenarios |
+| optimize_portfolio | monte_carlo_integration | percentile, expected | Use MC returns/covariance |
+| optimize_schedule | monte_carlo_integration | percentile, expected | Use MC durations |
+| optimize_execute | monte_carlo_integration | percentile, expected | Use MC coefficients |
+| optimize_network_flow | monte_carlo_integration | percentile, expected | Use MC costs/capacities |
+| optimize_pareto | monte_carlo_integration | percentile, expected | Use MC objective values |
+| optimize_stochastic | scenarios | scenarios only | Model uncertainty explicitly |
+
+### Pattern Type A: Percentile/Expected (Most Tools)
+
+**Used by**: allocation, portfolio, schedule, execute, network_flow, pareto
+
+**Purpose**: Extract specific values (P10/P50/P90 or expected) from MC output and use in optimization
+
+**Example**:
+```python
+# Step 1: Generate MC scenarios
+mc_result = run_business_scenario(
+    scenario_name="Revenue Forecast",
+    assumptions={...},
+    num_simulations=10000
+)
+
+# Step 2: Use P50 (median) values in optimization
+result = optimize_allocation(
+    objective={...},
+    resources={...},
+    item_requirements=[...],
+    monte_carlo_integration={
+        "mode": "percentile",      # or "expected"
+        "percentile": "p50",        # p10, p50, or p90
+        "mc_output": mc_result      # Full MC output
+    }
+)
+```
+
+**Modes**:
+- `"percentile"`: Use P10/P50/P90 values from distribution
+  - P10 = Conservative (pessimistic)
+  - P50 = Base case (median)
+  - P90 = Optimistic
+- `"expected"`: Use mean values from distribution
+
+**What happens**: Tool extracts specified percentile/expected values from `mc_output` and uses them in optimization
+
+---
+
+### Pattern Type B: Scenarios (Robust & Stochastic)
+
+**Used by**: optimize_robust, optimize_stochastic
+
+**Purpose**: Evaluate decisions across ALL scenarios (not just one percentile)
+
+**Example for optimize_robust**:
+```python
+# Step 1: Generate MC scenarios
+mc_result = run_business_scenario(
+    scenario_name="Product Launch",
+    assumptions={...},
+    num_simulations=10000
+)
+
+# Step 2: Find robust allocation
+result = optimize_robust(
+    objective={...},
+    resources={...},
+    item_requirements=[...],
+    monte_carlo_scenarios={
+        "scenarios": mc_result["scenarios"]  # Pass ALL scenarios
+    },
+    robustness_criterion="best_average",
+    risk_tolerance=0.85  # Works in 85% of scenarios
+)
+```
+
+**Example for optimize_stochastic**:
+```python
+result = optimize_stochastic(
+    first_stage={...},
+    second_stage={...},
+    scenarios=[  # Explicit scenario list
+        {"probability": 0.2, "demand": 100, "price": 50},
+        {"probability": 0.5, "demand": 150, "price": 45},
+        {"probability": 0.3, "demand": 200, "price": 40}
+    ]
+)
+```
+
+**What happens**: Tool evaluates optimization across all scenarios
+- `optimize_robust`: Tests candidate allocations against all scenarios
+- `optimize_stochastic`: Models uncertainty explicitly in 2-stage formulation
+
+---
+
+### When to Use Which Pattern
+
+**Use Pattern A (percentile/expected) when**:
+- You want a single deterministic optimization
+- You're comfortable picking P10/P50/P90 upfront
+- You want fast solve times
+- Example: "Allocate budget using median ROI values"
+
+**Use Pattern B (scenarios) when**:
+- You want robustness across uncertainty
+- You care about worst-case or risk tolerance
+- You need sequential decisions with uncertainty revelation
+- Example: "Find allocation that works in 85% of scenarios"
+
+---
+
+### Common Workflows
+
+**Workflow 1: Conservative Planning**
+```python
+# Use P10 (pessimistic) for conservative allocation
+result = optimize_allocation(
+    ...,
+    monte_carlo_integration={
+        "mode": "percentile",
+        "percentile": "p10",
+        "mc_output": mc_result
+    }
+)
+```
+
+**Workflow 2: Robust Optimization**
+```python
+# First try base case (P50)
+base = optimize_allocation(..., percentile="p50")
+
+# Then test robustness across all scenarios
+robust = optimize_robust(
+    ...,
+    monte_carlo_scenarios={"scenarios": mc_result["scenarios"]}
+)
+
+# Compare: Does base case work in 85%+ scenarios?
+```
+
+**Workflow 3: Stochastic Sequential Decisions**
+```python
+# Inventory planning: Order now, adjust later based on demand
+result = optimize_stochastic(
+    first_stage={  # Order decision (now)
+        "variables": [...],
+        "objective": {...}
+    },
+    second_stage={  # Adjustment decision (after seeing demand)
+        "variables": [...],
+        "objective": {...}
+    },
+    scenarios=[...]  # Possible demand scenarios
+)
+```
+
+---
+
+### Migration Guide
+
+If you're using the old pattern and want to update:
+
+**Old (still works)**:
+```python
+optimize_allocation(objective={...}, resources={...}, item_requirements=[...])
+```
+
+**New (with MC)**:
+```python
+optimize_allocation(
+    objective={...},
+    resources={...},
+    item_requirements=[...],
+    monte_carlo_integration={
+        "mode": "percentile",
+        "percentile": "p50",
+        "mc_output": mc_result
+    }
+)
+```
+
+**Backward compatible**: All tools work without MC parameters (deterministic mode)
+
+---
+
+## Schema Grammar Reference
+
+Common data structures used across multiple tools. Learn once, use everywhere.
+
+### Resource Definition
+
+**Used in**: optimize_allocation, optimize_schedule, optimize_pareto, optimize_stochastic, optimize_robust
+
+**Format**:
+```python
+{
+  "resource_name": {
+    "total": number,        # Required: Total available amount
+    "unit": string          # Optional: Unit of measurement
+  }
+}
+```
+
+**Examples**:
+```python
+# Simple budget
+resources = {"budget": {"total": 100000}}
+
+# Multiple resources with units
+resources = {
+    "budget": {"total": 100000, "unit": "USD"},
+    "time": {"total": 40, "unit": "hours"},
+    "capacity": {"total": 500, "unit": "units"}
+}
+```
+
+---
+
+### Item Requirements
+
+**Used in**: optimize_allocation, optimize_robust, optimize_pareto
+
+**Format**:
+```python
+[
+  {
+    "name": string,          # Required: Unique item identifier
+    "resource1": number,     # Required: Amount of resource1 needed
+    "resource2": number,     # Optional: Amount of resource2 needed
+    ...
+  }
+]
+```
+
+**Examples**:
+```python
+# Budget-only requirements
+item_requirements = [
+    {"name": "campaign_a", "budget": 25000},
+    {"name": "campaign_b", "budget": 18000}
+]
+
+# Multi-resource requirements
+item_requirements = [
+    {
+        "name": "project_a",
+        "budget": 60000,
+        "time": 20,
+        "capacity": 100
+    },
+    {
+        "name": "project_b",
+        "budget": 45000,
+        "time": 15,
+        "capacity": 75
+    }
+]
+```
+
+**Important**: Resource names in requirements must match resource names in `resources` dict
+
+---
+
+### Objective Specification
+
+**Used in**: optimize_allocation, optimize_robust, optimize_pareto
+
+**Single Objective Format**:
+```python
+{
+  "sense": "maximize" | "minimize",
+  "items": [
+    {
+      "name": string,      # Must match name in item_requirements
+      "value": number      # Objective coefficient
+    }
+  ]
+}
+```
+
+**Multi-Objective Format** (allocation only):
+```python
+{
+  "sense": "maximize" | "minimize",
+  "functions": [
+    {
+      "name": string,      # Function name (e.g., "profit")
+      "weight": number,    # Weight (0-1, must sum to 1.0)
+      "items": [
+        {"name": string, "value": number}
+      ]
+    }
+  ]
+}
+```
+
+**Example**:
+```python
+# Single objective
+objective = {
+    "sense": "maximize",
+    "items": [
+        {"name": "product_a", "value": 100},
+        {"name": "product_b", "value": 150}
+    ]
+}
+
+# Multi-objective (profit vs sustainability)
+objective = {
+    "sense": "maximize",
+    "functions": [
+        {
+            "name": "profit",
+            "weight": 0.7,
+            "items": [
+                {"name": "product_a", "value": 100},
+                {"name": "product_b", "value": 150}
+            ]
+        },
+        {
+            "name": "sustainability",
+            "weight": 0.3,
+            "items": [
+                {"name": "product_a", "value": 80},
+                {"name": "product_b", "value": 60}
+            ]
+        }
+    ]
+}
+```
+
+---
+
+### Constraint Specification
+
+**Used in**: optimize_allocation, optimize_schedule
+
+**Format**:
+```python
+[
+  {
+    "type": "min" | "max" | "conditional" | "disjunctive" | "mutex",
+    "items": [string],           # Item names
+    "limit": number,             # For min/max
+    "min_selected": number,      # For disjunctive
+    "exactly": number,           # For mutex
+    "condition_item": string,    # For conditional
+    "then_item": string,         # For conditional
+    "description": string        # Optional: Human-readable
+  }
+]
+```
+
+**Examples**:
+```python
+# Minimum selection (at least 1 core product)
+{"type": "min", "items": ["core_a", "core_b"], "limit": 1}
+
+# If-then logic (if A then must have B)
+{"type": "conditional", "condition_item": "project_a", "then_item": "project_b"}
+
+# Pick at least N (at least 2 of 3 options)
+{"type": "disjunctive", "items": ["opt1", "opt2", "opt3"], "min_selected": 2}
+
+# Pick exactly N (exactly 1 strategy - XOR)
+{"type": "mutex", "items": ["strategy_a", "strategy_b"], "exactly": 1}
+
+# Combined (complex business logic)
+constraints = [
+    {"type": "mutex", "items": ["core_a", "core_b"], "exactly": 1},
+    {"type": "conditional", "condition_item": "core_a", "then_item": "addon_1"},
+    {"type": "disjunctive", "items": ["addon_1", "addon_2"], "min_selected": 1}
+]
+```
+
+---
+
+### Network Specification
+
+**Used in**: optimize_network_flow
+
+**Format**:
+```python
+{
+  "nodes": [
+    {
+      "id": string,            # Unique node identifier
+      "supply": number,        # Positive = source (optional)
+      "demand": number         # Positive = sink (optional)
+    }
+  ],
+  "edges": [
+    {
+      "from": string,          # Source node id
+      "to": string,            # Target node id
+      "capacity": number,      # Max flow on edge (optional)
+      "cost": number           # Cost per unit flow (optional)
+    }
+  ]
+}
+```
+
+**Example**:
+```python
+network = {
+    "nodes": [
+        {"id": "warehouse", "supply": 100},
+        {"id": "customer_1", "demand": 40},
+        {"id": "customer_2", "demand": 60}
+    ],
+    "edges": [
+        {"from": "warehouse", "to": "customer_1", "capacity": 50, "cost": 5.0},
+        {"from": "warehouse", "to": "customer_2", "capacity": 80, "cost": 3.0}
+    ]
+}
+```
+
+**Node types**:
+- Source: `supply > 0` (produces flow)
+- Sink: `demand > 0` (consumes flow)
+- Transshipment: Neither supply nor demand (passes flow through)
+
+---
+
+### Solver Options
+
+**Used in**: All tools
+
+**Format**:
+```python
+{
+  "time_limit": number,        # Optional: Max solve time (seconds)
+  "verbose": boolean           # Optional: Enable debug output
+}
+```
+
+**Example**:
+```python
+solver_options = {
+    "time_limit": 30,   # Stop after 30 seconds
+    "verbose": True      # Print solver progress
+}
+```
+
+**Usage**:
+```python
+result = optimize_allocation(
+    objective={...},
+    resources={...},
+    item_requirements=[...],
+    solver_options={"time_limit": 60, "verbose": False}
+)
+```
 
 ---
 
