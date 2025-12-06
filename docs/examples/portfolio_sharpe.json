@@ -1,0 +1,66 @@
+{
+  "tool": "optimize_portfolio",
+  "description": "Optimize 3-asset portfolio to maximize Sharpe ratio",
+  "use_case": "Investment portfolio allocation with risk-return optimization",
+  "input": {
+    "assets": [
+      {"name": "US_equity", "expected_return": 0.10},
+      {"name": "intl_equity", "expected_return": 0.09},
+      {"name": "bonds", "expected_return": 0.04}
+    ],
+    "covariance_matrix": [
+      [0.0225, 0.0100, 0.0020],
+      [0.0100, 0.0256, 0.0015],
+      [0.0020, 0.0015, 0.0036]
+    ],
+    "optimization_objective": "sharpe",
+    "risk_free_rate": 0.025,
+    "constraints": {
+      "max_weight": 0.70,
+      "min_weight": 0.10,
+      "long_only": true
+    }
+  },
+  "expected_output": {
+    "status": "optimal",
+    "weights": {
+      "US_equity": 0.70,
+      "intl_equity": 0.20,
+      "bonds": 0.10
+    },
+    "expected_return": 0.092,
+    "portfolio_std": 0.1234,
+    "sharpe_ratio": 0.543,
+    "assets": [
+      {
+        "name": "US_equity",
+        "weight": 0.70,
+        "expected_return": 0.10,
+        "risk_contribution_pct": 165.1
+      },
+      {
+        "name": "intl_equity",
+        "weight": 0.20,
+        "expected_return": 0.09,
+        "risk_contribution_pct": 45.2
+      },
+      {
+        "name": "bonds",
+        "weight": 0.10,
+        "expected_return": 0.04,
+        "risk_contribution_pct": 8.3
+      }
+    ]
+  },
+  "notes": [
+    "Sharpe ratio = (return - risk_free) / risk = (9.2% - 2.5%) / 12.34% = 0.543",
+    "US equity contributes 165% of portfolio risk due to correlations",
+    "Portfolio expected return: 9.2% with 12.34% volatility",
+    "Max position size (70%) constraint binding on US equity"
+  ],
+  "covariance_notes": {
+    "US_equity_variance": "0.0225 = (15% std)²",
+    "US_intl_correlation": "0.0100 / (0.15 * 0.16) = 0.42 correlation",
+    "bonds_variance": "0.0036 = (6% std)²"
+  }
+}

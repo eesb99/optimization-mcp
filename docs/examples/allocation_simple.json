@@ -1,0 +1,44 @@
+{
+  "tool": "optimize_allocation",
+  "description": "Allocate $100K marketing budget across 3 channels to maximize ROI",
+  "use_case": "Marketing budget optimization with resource constraints",
+  "input": {
+    "objective": {
+      "sense": "maximize",
+      "items": [
+        {"name": "google_ads", "value": 125000},
+        {"name": "linkedin", "value": 87000},
+        {"name": "content_marketing", "value": 95000}
+      ]
+    },
+    "resources": {
+      "budget": {"total": 100000, "unit": "USD"}
+    },
+    "item_requirements": [
+      {"name": "google_ads", "budget": 25000},
+      {"name": "linkedin", "budget": 18000},
+      {"name": "content_marketing", "budget": 22000}
+    ]
+  },
+  "expected_output": {
+    "status": "optimal",
+    "objective_value": 307000.0,
+    "allocation": {
+      "google_ads": 1,
+      "linkedin": 1,
+      "content_marketing": 1
+    },
+    "resource_usage": {
+      "budget": {
+        "used": 65000,
+        "available": 100000,
+        "utilization": 0.65
+      }
+    }
+  },
+  "notes": [
+    "All three channels selected (all fit within budget)",
+    "Total expected ROI: $307K from $65K spend",
+    "35% of budget unused (consider additional channels)"
+  ]
+}

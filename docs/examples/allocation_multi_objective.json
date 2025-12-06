@@ -1,0 +1,65 @@
+{
+  "tool": "optimize_allocation",
+  "description": "Multi-objective product selection balancing profit (70%) and sustainability (30%)",
+  "use_case": "Strategic planning with competing objectives",
+  "input": {
+    "objective": {
+      "sense": "maximize",
+      "functions": [
+        {
+          "name": "profit",
+          "weight": 0.7,
+          "items": [
+            {"name": "product_a", "value": 100},
+            {"name": "product_b", "value": 150},
+            {"name": "product_c", "value": 120}
+          ]
+        },
+        {
+          "name": "sustainability",
+          "weight": 0.3,
+          "items": [
+            {"name": "product_a", "value": 80},
+            {"name": "product_b", "value": 60},
+            {"name": "product_c", "value": 95}
+          ]
+        }
+      ]
+    },
+    "resources": {
+      "budget": {"total": 50000, "unit": "USD"},
+      "capacity": {"total": 100, "unit": "units"}
+    },
+    "item_requirements": [
+      {"name": "product_a", "budget": 25000, "capacity": 40},
+      {"name": "product_b", "budget": 30000, "capacity": 50},
+      {"name": "product_c", "budget": 20000, "capacity": 35}
+    ]
+  },
+  "expected_output": {
+    "status": "optimal",
+    "objective_value": 127.0,
+    "allocation": {
+      "product_a": 1,
+      "product_b": 0,
+      "product_c": 1
+    },
+    "objective_breakdown": {
+      "profit": {
+        "value": 220,
+        "weight": 0.7,
+        "weighted_value": 154.0
+      },
+      "sustainability": {
+        "value": 175,
+        "weight": 0.3,
+        "weighted_value": 52.5
+      }
+    }
+  },
+  "notes": [
+    "Weighted scalarization combines objectives: 0.7*profit + 0.3*sustainability",
+    "Product B excluded despite high profit (too expensive for capacity)",
+    "Products A and C provide best balance of profit and sustainability"
+  ]
+}

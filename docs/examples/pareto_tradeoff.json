@@ -1,0 +1,92 @@
+{
+  "tool": "optimize_pareto",
+  "description": "Generate Pareto frontier exploring profit vs sustainability trade-offs",
+  "use_case": "Multi-objective strategic planning with trade-off analysis",
+  "input": {
+    "objectives": [
+      {
+        "name": "profit",
+        "items": [
+          {"name": "project_a", "value": 125000},
+          {"name": "project_b", "value": 87000},
+          {"name": "project_c", "value": 105000}
+        ],
+        "sense": "maximize"
+      },
+      {
+        "name": "sustainability",
+        "items": [
+          {"name": "project_a", "value": 65},
+          {"name": "project_b", "value": 92},
+          {"name": "project_c", "value": 78}
+        ],
+        "sense": "maximize"
+      }
+    ],
+    "resources": {
+      "budget": {"total": 100000, "unit": "USD"}
+    },
+    "item_requirements": [
+      {"name": "project_a", "budget": 60000},
+      {"name": "project_b", "budget": 45000},
+      {"name": "project_c", "budget": 55000}
+    ],
+    "num_points": 20
+  },
+  "expected_output": {
+    "status": "optimal",
+    "pareto_frontier": [
+      {
+        "weights": {"profit": 1.0, "sustainability": 0.0},
+        "allocation": {"project_a": 1, "project_b": 0, "project_c": 0},
+        "objective_values": {"profit": 125000, "sustainability": 65}
+      },
+      {
+        "weights": {"profit": 0.75, "sustainability": 0.25},
+        "allocation": {"project_a": 1, "project_b": 0, "project_c": 0},
+        "objective_values": {"profit": 125000, "sustainability": 65}
+      },
+      {
+        "weights": {"profit": 0.5, "sustainability": 0.5},
+        "allocation": {"project_a": 0, "project_b": 1, "project_c": 0},
+        "objective_values": {"profit": 87000, "sustainability": 92}
+      },
+      {
+        "weights": {"profit": 0.0, "sustainability": 1.0},
+        "allocation": {"project_a": 0, "project_b": 1, "project_c": 0},
+        "objective_values": {"profit": 87000, "sustainability": 92}
+      }
+    ],
+    "num_frontier_points": 4,
+    "recommended_point": {
+      "allocation": {"project_a": 0, "project_b": 1, "project_c": 0},
+      "objective_values": {"profit": 87000, "sustainability": 92},
+      "rationale": "Knee point - best balance between objectives"
+    },
+    "tradeoff_analysis": {
+      "objective_ranges": {
+        "profit": {"min": 87000, "max": 125000, "range": 38000},
+        "sustainability": {"min": 65, "max": 92, "range": 27}
+      },
+      "tradeoff_rates": {
+        "sustainability_per_profit": {
+          "avg": 0.0007,
+          "interpretation": "Each $1K profit costs ~0.7 sustainability points"
+        }
+      }
+    }
+  },
+  "notes": [
+    "Frontier has 4 non-dominated points (dominated solutions filtered out)",
+    "Project A: High profit (125K) but low sustainability (65)",
+    "Project B: Lower profit (87K) but highest sustainability (92)",
+    "Project C: Middle ground but dominated by A and B",
+    "Knee point recommends Project B (best balanced solution)"
+  ],
+  "interpretation": {
+    "max_profit_solution": "Project A selected, profit=$125K, sustainability=65",
+    "max_sustainability_solution": "Project B selected, profit=$87K, sustainability=92",
+    "recommended_solution": "Project B (knee point) - sacrifice $38K profit for 27 sustainability points",
+    "insight": "Trade-off rate: ~$1,400 per sustainability point"
+  }
+}

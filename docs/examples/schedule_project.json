@@ -1,0 +1,94 @@
+{
+  "tool": "optimize_schedule",
+  "description": "Schedule 4-task software project to minimize completion time",
+  "use_case": "Project scheduling with task dependencies and resource constraints (RCPSP)",
+  "input": {
+    "tasks": [
+      {
+        "name": "design",
+        "duration": 5,
+        "value": 100,
+        "dependencies": [],
+        "resources": {"developers": 2}
+      },
+      {
+        "name": "backend",
+        "duration": 10,
+        "value": 200,
+        "dependencies": ["design"],
+        "resources": {"developers": 3}
+      },
+      {
+        "name": "frontend",
+        "duration": 8,
+        "value": 150,
+        "dependencies": ["design"],
+        "resources": {"developers": 2}
+      },
+      {
+        "name": "testing",
+        "duration": 4,
+        "value": 80,
+        "dependencies": ["backend", "frontend"],
+        "resources": {"developers": 2}
+      }
+    ],
+    "resources": {
+      "developers": {"total": 5}
+    },
+    "time_horizon": 30,
+    "optimization_objective": "minimize_makespan"
+  },
+  "expected_output": {
+    "status": "optimal",
+    "makespan": 19,
+    "schedule": {
+      "design": 0,
+      "backend": 5,
+      "frontend": 5,
+      "testing": 15
+    },
+    "critical_path": ["design", "backend", "testing"],
+    "tasks": [
+      {
+        "name": "design",
+        "start_time": 0,
+        "end_time": 5,
+        "duration": 5,
+        "on_critical_path": true
+      },
+      {
+        "name": "backend",
+        "start_time": 5,
+        "end_time": 15,
+        "duration": 10,
+        "on_critical_path": true
+      },
+      {
+        "name": "frontend",
+        "start_time": 5,
+        "end_time": 13,
+        "duration": 8,
+        "on_critical_path": false
+      },
+      {
+        "name": "testing",
+        "start_time": 15,
+        "end_time": 19,
+        "duration": 4,
+        "on_critical_path": true
+      }
+    ]
+  },
+  "notes": [
+    "Project completes at time 19 (makespan)",
+    "Critical path: design → backend → testing (determines makespan)",
+    "Frontend has 2 time units of slack (can start later without affecting makespan)",
+    "Backend and frontend run in parallel from time 5-13"
+  ],
+  "insights": {
+    "parallelization": "Backend and frontend scheduled in parallel after design completes",
+    "bottleneck": "Testing waits for both backend and frontend to complete",
+    "resource_usage": "Max 5 developers used simultaneously (time 5-13)"
+  }
+}
