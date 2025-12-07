@@ -83,17 +83,25 @@ class MonteCarloIntegration:
                 )
 
         # Extract requested variables
-        if variable_names is None:
-            extracted_values = percentile_data
+        # Handle two cases:
+        # 1. percentile_data is a dict: per-item values like {"project_a": 50000}
+        # 2. percentile_data is a scalar: aggregate value like 1064102
+        if isinstance(percentile_data, dict):
+            if variable_names is None:
+                extracted_values = percentile_data
+            else:
+                for var in variable_names:
+                    if var in percentile_data:
+                        extracted_values[var] = percentile_data[var]
+                    else:
+                        raise ValueError(
+                            f"Variable '{var}' not found in percentile data. "
+                            f"Available: {list(percentile_data.keys())}"
+                        )
         else:
-            for var in variable_names:
-                if var in percentile_data:
-                    extracted_values[var] = percentile_data[var]
-                else:
-                    raise ValueError(
-                        f"Variable '{var}' not found in percentile data. "
-                        f"Available: {list(percentile_data.keys())}"
-                    )
+            # Scalar value - MC returned aggregate, not per-item values
+            # Return as "_aggregate" key so caller can detect this
+            extracted_values = {"_aggregate": percentile_data}
 
         return extracted_values
 
@@ -127,6 +135,9 @@ class MonteCarloIntegration:
                         for var in variable_names
                         if var in expected
                     }
+            elif isinstance(expected, (int, float)):
+                # Scalar expected value - return as aggregate
+                return {"_aggregate": expected}
 
         # Fallback: Use P50 as proxy for expected value
         return MonteCarloIntegration.extract_percentile_values(
