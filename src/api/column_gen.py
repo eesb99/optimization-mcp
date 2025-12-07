@@ -85,6 +85,9 @@ def optimize_column_gen(
     if len(columns) == 0:
         raise ValueError("No initial columns provided and could not generate trivial columns")
 
+    # Track initial column count before generation loop
+    initial_column_count = len(columns)
+
     convergence_history = []
 
     # Column generation main loop
@@ -154,8 +157,8 @@ def optimize_column_gen(
         "column_count": len(columns),
         "iterations": iteration + 1,
         "convergence_history": convergence_history,
-        "num_initial_columns": len(initial_columns) if initial_columns else 0,
-        "num_generated_columns": len(columns) - (len(initial_columns) if initial_columns else 0)
+        "num_initial_columns": initial_column_count,
+        "num_generated_columns": len(columns) - initial_column_count
     }
 
     # Extract solution (selected columns)
@@ -223,15 +226,27 @@ def _solve_rmp(
     solver.set_objective(obj_expr, sense)
 
     # Add covering constraints
+    # Handle both "constraints" list and "demands" dict formats
     constraints = master_problem.get("constraints", [])
+    demands = master_problem.get("demands", {})
+
+    # Convert demands dict to constraints list if needed
+    if demands and not constraints:
+        for name, rhs in demands.items():
+            constraints.append({
+                "name": name,
+                "rhs": rhs,
+                "type": ">="  # Set covering default
+            })
+
     for constr in constraints:
         constr_name = constr.get("name", "constraint")
         constr_type = constr.get("type", ">=")
         rhs = constr.get("rhs", 0)
 
-        # Sum of column coefficients
+        # Sum of column coefficients (support both "coefficients" and "coverage" keys)
         expr = pl.lpSum([
-            columns[i].get("coefficients", {}).get(constr_name, 0.0) * variables[col_names[i]]
+            (columns[i].get("coefficients") or columns[i].get("coverage", {})).get(constr_name, 0.0) * variables[col_names[i]]
             for i in range(len(columns))
         ])
 
@@ -295,10 +310,90 @@ def _solve_knapsack_pricing(
     duals: Dict[str, float],
     optimality_gap: float
 ) -> List[Dict[str, Any]]:
-    """Solve knapsack pricing subproblem."""
-    # Simplified implementation
-    # Real implementation would solve: max sum((dual_i * a_ij) - c_j) x_j
-    return []
+    """
+    Solve knapsack pricing subproblem for cutting stock.
+
+    Finds patterns with negative reduced cost using dynamic programming.
+    Reduced cost = pattern_cost - sum(dual_i * coverage_i)
+    """
+    # Get capacity (support multiple key names)
+    capacity = pricing_problem.get("stock_length") or pricing_problem.get("capacity", 100)
+
+    # Get item sizes (support multiple formats)
+    items = pricing_problem.get("items", {})
+    item_lengths = pricing_problem.get("item_lengths", items)
+
+    # Build item list with dual values
+    item_list = []
+    for name, size_info in item_lengths.items():
+        # Handle both direct size and dict format
+        if isinstance(size_info, dict):
+            size = size_info.get("size", size_info.get("length", 0))
+        else:
+            size = int(size_info)
+
+        # Find dual value (try multiple key formats)
+        dual_value = duals.get(name, 0)
+        if dual_value == 0:
+            dual_value = duals.get(f"demand_{name}", 0)
+        if dual_value == 0:
+            dual_value = duals.get(f"item_{name}", 0)
+
+        if size > 0:
+            item_list.append({
+                "name": name,
+                "size": size,
+                "value": max(dual_value, 0.001)  # Ensure positive value for DP
+            })
+
+    if not item_list:
+        return []
+
+    # Ensure capacity is an integer
+    capacity = int(capacity)
+
+    # DP for unbounded knapsack: maximize sum(dual_i * count_i)
+    dp = [0.0] * (capacity + 1)
+    choice = [None] * (capacity + 1)
+
+    for c in range(1, capacity + 1):
+        for item in item_list:
+            size = item["size"]
+            value = item["value"]
+            if size <= c and dp[c - size] + value > dp[c]:
+                dp[c] = dp[c - size] + value
+                choice[c] = item["name"]
+
+    # Reconstruct solution pattern
+    pattern = {}
+    remaining = capacity
+    while remaining > 0 and choice[remaining] is not None:
+        item_name = choice[remaining]
+        pattern[item_name] = pattern.get(item_name, 0) + 1
+        # Find item size
+        item_size = next(i["size"] for i in item_list if i["name"] == item_name)
+        remaining -= item_size
+
+    if not pattern:
+        return []
+
+    # Calculate reduced cost: pattern_cost - sum(dual * coverage)
+    pattern_cost = 1.0  # Standard cutting stock: 1 stock used per pattern
+    total_dual_value = dp[capacity]
+    reduced_cost = pattern_cost - total_dual_value
+
+    # Only return if improving (negative reduced cost)
+    if reduced_cost >= -optimality_gap:
+        return []
+
+    # Return new column
+    return [{
+        "id": f"gen_{abs(hash(str(pattern))) % 100000}",
+        "cost": pattern_cost,
+        "coefficients": pattern,
+        "coverage": pattern,  # Alias for compatibility
+        "reduced_cost": reduced_cost
+    }]
 
 
 def _solve_shortest_path_pricing(
@@ -314,8 +409,19 @@ def _solve_shortest_path_pricing(
 def _generate_trivial_initial_columns(
     master_problem: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
-    """Generate trivial initial columns (one per constraint)."""
+    """Generate trivial initial columns (one per constraint/demand)."""
     constraints = master_problem.get("constraints", [])
+    demands = master_problem.get("demands", {})
+
+    # Convert demands dict to constraints list if needed
+    if demands and not constraints:
+        for name, rhs in demands.items():
+            constraints.append({
+                "name": name,
+                "rhs": rhs,
+                "type": ">="
+            })
+
     columns = []
 
     for i, constr in enumerate(constraints):
@@ -326,7 +432,8 @@ def _generate_trivial_initial_columns(
         columns.append({
             "id": f"initial_{constr_name}",
             "cost": 1000.0,  # High cost (will be replaced by better columns)
-            "coefficients": {constr_name: rhs}
+            "coefficients": {constr_name: rhs},
+            "coverage": {constr_name: rhs}  # Alias for compatibility
         })
 
     return columns
