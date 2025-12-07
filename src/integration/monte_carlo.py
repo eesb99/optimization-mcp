@@ -372,32 +372,38 @@ class MonteCarloIntegration:
         if "percentile_outcomes" in mc_output and "percentiles" not in mc_output:
             percentile_outcomes = mc_output["percentile_outcomes"]
 
-            # Fix 2: Convert key names (pessimistic_P10 → p10, etc.)
-            adapted["percentiles"] = {}
-            key_mapping = {
-                "pessimistic_P10": "p10",
-                "pessimistic_p10": "p10",
-                "P10": "p10",
-                "most_likely_P50": "p50",
-                "most_likely_p50": "p50",
-                "P50": "p50",
-                "optimistic_P90": "p90",
-                "optimistic_p90": "p90",
-                "P90": "p90",
-                "P25": "p25",
-                "p25": "p25",
-                "P75": "p75",
-                "p75": "p75"
-            }
+            # Guard: Only process if percentile_outcomes is a dict
+            # Scalar values (int/float) indicate different MC output structure
+            if isinstance(percentile_outcomes, dict):
+                # Fix 2: Convert key names (pessimistic_P10 → p10, etc.)
+                adapted["percentiles"] = {}
+                key_mapping = {
+                    "pessimistic_P10": "p10",
+                    "pessimistic_p10": "p10",
+                    "P10": "p10",
+                    "most_likely_P50": "p50",
+                    "most_likely_p50": "p50",
+                    "P50": "p50",
+                    "optimistic_P90": "p90",
+                    "optimistic_p90": "p90",
+                    "P90": "p90",
+                    "P25": "p25",
+                    "p25": "p25",
+                    "P75": "p75",
+                    "p75": "p75"
+                }
 
-            for old_key, new_key in key_mapping.items():
-                if old_key in percentile_outcomes:
-                    adapted["percentiles"][new_key] = percentile_outcomes[old_key]
+                for old_key, new_key in key_mapping.items():
+                    if old_key in percentile_outcomes:
+                        adapted["percentiles"][new_key] = percentile_outcomes[old_key]
 
-            # Also preserve original keys that already match
-            for key, value in percentile_outcomes.items():
-                if key not in key_mapping:
-                    adapted["percentiles"][key.lower()] = value
+                # Also preserve original keys that already match
+                for key, value in percentile_outcomes.items():
+                    if key not in key_mapping:
+                        adapted["percentiles"][key.lower()] = value
+            else:
+                # Scalar value - wrap in percentiles dict with value key
+                adapted["percentiles"] = {"value": percentile_outcomes}
 
         # Fix 3: Map common expected value field names
         expected_aliases = [
