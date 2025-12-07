@@ -133,6 +133,7 @@ async def list_tools() -> list[Tool]:
                     },
                     "monte_carlo_integration": {
                         "type": "object",
+                        "description": "Monte Carlo integration settings. Accepts output from monte-carlo-business MCP (auto-adapted). Supports modes: percentile (use P10/P50/P90), expected (use mean), scenarios (robust optimization).",
                         "properties": {
                             "mode": {
                                 "type": "string",
@@ -285,6 +286,7 @@ async def list_tools() -> list[Tool]:
                     },
                     "monte_carlo_integration": {
                         "type": "object",
+                        "description": "Monte Carlo integration settings. Accepts output from monte-carlo-business MCP (auto-adapted). Supports modes: percentile (use P10/P50/P90), expected (use mean).",
                         "properties": {
                             "mode": {
                                 "type": "string",
@@ -344,7 +346,10 @@ async def list_tools() -> list[Tool]:
                         "enum": ["minimize_makespan", "maximize_value"],
                         "default": "minimize_makespan"
                     },
-                    "monte_carlo_integration": {"type": "object"},
+                    "monte_carlo_integration": {
+                        "type": "object",
+                        "description": "Monte Carlo integration settings. Accepts output from monte-carlo-business MCP (auto-adapted). Modes: percentile/expected/scenarios."
+                    },
                     "solver_options": {"type": "object"}
                 },
                 "required": ["tasks", "resources", "time_horizon"]
@@ -399,7 +404,10 @@ async def list_tools() -> list[Tool]:
                     },
                     "auto_detect": {"type": "boolean", "default": True},
                     "solver_preference": {"type": "string", "enum": ["pulp", "scipy", "cvxpy"]},
-                    "monte_carlo_integration": {"type": "object"},
+                    "monte_carlo_integration": {
+                        "type": "object",
+                        "description": "Monte Carlo integration settings. Accepts output from monte-carlo-business MCP (auto-adapted). Modes: percentile/expected/scenarios."
+                    },
                     "solver_options": {"type": "object"}
                 },
                 "required": ["problem_definition"]
@@ -454,7 +462,10 @@ async def list_tools() -> list[Tool]:
                         "default": "min_cost"
                     },
                     "constraints": {"type": "array"},
-                    "monte_carlo_integration": {"type": "object"},
+                    "monte_carlo_integration": {
+                        "type": "object",
+                        "description": "Monte Carlo integration settings. Accepts output from monte-carlo-business MCP (auto-adapted). Modes: percentile/expected/scenarios."
+                    },
                     "solver_options": {"type": "object"}
                 },
                 "required": ["network"]
@@ -498,7 +509,10 @@ async def list_tools() -> list[Tool]:
                     "item_requirements": {"type": "array"},
                     "constraints": {"type": "array"},
                     "num_points": {"type": "integer", "minimum": 2, "default": 20},
-                    "monte_carlo_integration": {"type": "object"},
+                    "monte_carlo_integration": {
+                        "type": "object",
+                        "description": "Monte Carlo integration settings. Accepts output from monte-carlo-business MCP (auto-adapted). Modes: percentile/expected/scenarios."
+                    },
                     "solver_options": {"type": "object"}
                 },
                 "required": ["objectives", "resources", "item_requirements"]
@@ -514,12 +528,45 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "first_stage": {"type": "object"},
-                    "second_stage": {"type": "object"},
+                    "first_stage": {
+                        "type": "object",
+                        "description": "First stage decisions: {decisions: [{name: str, type: str, cost: float}, ...], resources: {resource: {total: float}, ...}, constraints: [...]}",
+                        "properties": {
+                            "decisions": {
+                                "type": "array",
+                                "description": "First stage decision variables",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "type": {"type": "string", "enum": ["continuous", "integer", "binary"]},
+                                        "cost": {"type": "number"}
+                                    },
+                                    "required": ["name", "type"]
+                                }
+                            },
+                            "resources": {"type": "object"},
+                            "constraints": {"type": "array"}
+                        },
+                        "required": ["decisions"]
+                    },
+                    "second_stage": {
+                        "type": "object",
+                        "description": "Second stage recourse decisions: same structure as first_stage",
+                        "properties": {
+                            "decisions": {"type": "array"},
+                            "resources": {"type": "object"},
+                            "constraints": {"type": "array"}
+                        },
+                        "required": ["decisions"]
+                    },
                     "scenarios": {"type": "array"},
                     "risk_measure": {"type": "string", "enum": ["expected", "cvar", "worst_case"], "default": "expected"},
                     "risk_parameter": {"type": "number", "default": 0.95},
-                    "monte_carlo_integration": {"type": "object"},
+                    "monte_carlo_integration": {
+                        "type": "object",
+                        "description": "Monte Carlo integration settings. Accepts output from monte-carlo-business MCP (auto-adapted). Modes: percentile/expected/scenarios."
+                    },
                     "solver_options": {"type": "object"}
                 },
                 "required": ["first_stage", "second_stage", "scenarios"]

@@ -43,6 +43,9 @@ class MonteCarloIntegration:
             values = extract_percentile_values(mc_result, "p50")
             # values = {"project_a_return": 48500, "project_b_return": 62000}
         """
+        # Adapt MC output format first
+        mc_output = MonteCarloIntegration.adapt_mc_output(mc_output)
+
         # Check if percentiles exist in MC output
         if "percentiles" not in mc_output:
             raise ValueError(
@@ -109,6 +112,9 @@ class MonteCarloIntegration:
         Returns:
             Dict mapping variable names to their expected values
         """
+        # Adapt MC output format first
+        mc_output = MonteCarloIntegration.adapt_mc_output(mc_output)
+
         # Try to get expected values directly
         if "expected_outcome" in mc_output:
             expected = mc_output["expected_outcome"]
@@ -150,6 +156,9 @@ class MonteCarloIntegration:
             #     ...  (10,000 scenarios)
             # ]
         """
+        # Adapt MC output format first
+        mc_output = MonteCarloIntegration.adapt_mc_output(mc_output)
+
         if "scenarios" not in mc_output:
             raise ValueError(
                 "Monte Carlo output missing 'scenarios' field. "
@@ -342,33 +351,117 @@ class MonteCarloIntegration:
             )
 
     @staticmethod
-    def validate_mc_output(mc_output: Dict[str, Any]) -> bool:
+    def adapt_mc_output(mc_output: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Validate that MC output has required structure.
+        Adapt monte-carlo-business MCP output to optimization-mcp expected format.
+
+        Handles format mismatches:
+        - percentile_outcomes → percentiles
+        - pessimistic_P10 → p10 (case-insensitive)
+        - expected_total_profit → expected_outcome
+
+        Args:
+            mc_output: Raw output from monte-carlo-business MCP
+
+        Returns:
+            Adapted output matching optimization-mcp expectations
+        """
+        adapted = mc_output.copy()
+
+        # Fix 1: Rename percentile_outcomes → percentiles
+        if "percentile_outcomes" in mc_output and "percentiles" not in mc_output:
+            percentile_outcomes = mc_output["percentile_outcomes"]
+
+            # Fix 2: Convert key names (pessimistic_P10 → p10, etc.)
+            adapted["percentiles"] = {}
+            key_mapping = {
+                "pessimistic_P10": "p10",
+                "pessimistic_p10": "p10",
+                "P10": "p10",
+                "most_likely_P50": "p50",
+                "most_likely_p50": "p50",
+                "P50": "p50",
+                "optimistic_P90": "p90",
+                "optimistic_p90": "p90",
+                "P90": "p90",
+                "P25": "p25",
+                "p25": "p25",
+                "P75": "p75",
+                "p75": "p75"
+            }
+
+            for old_key, new_key in key_mapping.items():
+                if old_key in percentile_outcomes:
+                    adapted["percentiles"][new_key] = percentile_outcomes[old_key]
+
+            # Also preserve original keys that already match
+            for key, value in percentile_outcomes.items():
+                if key not in key_mapping:
+                    adapted["percentiles"][key.lower()] = value
+
+        # Fix 3: Map common expected value field names
+        expected_aliases = [
+            "expected_total_profit",
+            "expected_profit",
+            "expected_value",
+            "expected_outcome",
+            "mean_value"
+        ]
+        if "expected_outcome" not in adapted:
+            for alias in expected_aliases:
+                if alias in mc_output:
+                    adapted["expected_outcome"] = mc_output[alias]
+                    break
+
+        return adapted
+
+    @staticmethod
+    def validate_mc_output(mc_output: Dict[str, Any], mode: str = "percentile") -> Dict[str, Any]:
+        """
+        Validate Monte Carlo output structure with mode-specific checks.
 
         Args:
             mc_output: Output from Monte Carlo MCP tool
+            mode: Integration mode (percentile, expected, scenarios)
 
         Returns:
-            True if valid, raises ValueError if invalid
+            Adapted output matching expected format
         """
-        required_fields = ["percentiles"]
+        if not mc_output:
+            raise ValueError("Monte Carlo output is empty")
 
-        for field in required_fields:
-            if field not in mc_output:
+        # Adapt format if needed
+        adapted = MonteCarloIntegration.adapt_mc_output(mc_output)
+
+        # Mode-specific validation
+        if mode == "percentile":
+            if "percentiles" not in adapted:
                 raise ValueError(
-                    f"Invalid Monte Carlo output: missing '{field}' field. "
+                    f"Monte Carlo output missing 'percentiles' field for mode='{mode}'. "
+                    f"If using monte-carlo-business MCP, ensure it returns 'percentile_outcomes' or 'percentiles'. "
+                    f"Available fields: {list(mc_output.keys())}"
+                )
+            # Validate percentiles structure
+            if not isinstance(adapted["percentiles"], dict):
+                raise ValueError("Monte Carlo 'percentiles' must be a dictionary")
+
+        elif mode == "expected":
+            if "expected_outcome" not in adapted:
+                raise ValueError(
+                    f"Monte Carlo output missing 'expected_outcome' field for mode='{mode}'. "
+                    f"Tried aliases: expected_total_profit, expected_value, mean_value. "
                     f"Available fields: {list(mc_output.keys())}"
                 )
 
-        # Validate percentiles structure
-        percentiles = mc_output["percentiles"]
-        if not isinstance(percentiles, dict):
-            raise ValueError(
-                "Monte Carlo 'percentiles' must be a dictionary"
-            )
+        elif mode == "scenarios":
+            if "scenarios" not in adapted:
+                raise ValueError(
+                    f"Monte Carlo output missing 'scenarios' field for mode='{mode}'. "
+                    f"Use run_business_scenario with return_scenarios=True. "
+                    f"Available fields: {list(mc_output.keys())}"
+                )
 
-        return True
+        return adapted
 
 
 # Convenience functions for common integration patterns

@@ -53,6 +53,7 @@ context/
 context-backup*/
 CONTEXT-SAVED.md
 DEVELOPMENT-JOURNAL.md
+development/
 
 # Test Files and Folders
 test_*.py

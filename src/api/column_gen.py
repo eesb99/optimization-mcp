@@ -146,10 +146,11 @@ def optimize_column_gen(
             print(f"  Added {len(new_columns)} new columns (reduced cost: {best_reduced_cost:.6f})")
 
     # Build final result
+    obj_value = rmp_result.get("objective_value")
     result = {
         "solver": "column_generation",
-        "status": "converged" if iteration < max_iterations - 1 else "optimal",
-        "objective_value": rmp_result["objective_value"],
+        "status": "failed" if obj_value is None else ("converged" if iteration < max_iterations - 1 else "optimal"),
+        "objective_value": obj_value,
         "column_count": len(columns),
         "iterations": iteration + 1,
         "convergence_history": convergence_history,
@@ -176,10 +177,16 @@ def optimize_column_gen(
     result["optimal_solution"] = selected_columns
 
     # Simplified MC output
+    obj_value = result.get('objective_value')
+    if obj_value is not None:
+        outcome_str = f"Column generation: {len(selected_columns)} columns selected, cost={obj_value:.2f}"
+    else:
+        outcome_str = f"Column generation: {len(selected_columns)} columns selected, cost=unknown (solver failed)"
+
     result["monte_carlo_compatible"] = {
         "decision_variables": {f"column_{i}": col["weight"] for i, col in enumerate(selected_columns)},
         "assumptions": [],
-        "outcome_function": f"Column generation: {len(selected_columns)} columns selected, cost={result['objective_value']:.2f}",
+        "outcome_function": outcome_str,
         "recommended_next_tool": "validate_reasoning_confidence"
     }
 

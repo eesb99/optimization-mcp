@@ -161,13 +161,19 @@ def _validate_stochastic_structure(
     """Validate stochastic problem structure."""
     # Check first stage
     if "decisions" not in first_stage:
-        raise ValueError("first_stage missing 'decisions' field")
+        raise ValueError(
+            "first_stage missing 'decisions' field. Required structure: "
+            "{decisions: [{name: str, type: str, cost: float}, ...], resources: {...}, constraints: [...]}"
+        )
     if not isinstance(first_stage["decisions"], list):
         raise ValueError("first_stage 'decisions' must be a list")
 
     # Check second stage
     if "decisions" not in second_stage:
-        raise ValueError("second_stage missing 'decisions' field")
+        raise ValueError(
+            "second_stage missing 'decisions' field. Required structure: "
+            "{decisions: [{name: str, type: str}, ...], resources: {...}, constraints: [...]}"
+        )
 
     # Check scenarios
     if not isinstance(scenarios, list) or len(scenarios) == 0:
